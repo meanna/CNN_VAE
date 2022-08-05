@@ -1,31 +1,37 @@
-
 # CNN-VAE
-A Res-Net Style VAE with an adjustable perceptual loss using a pre-trained vgg19. <br>
-Based off of ![Deep Feature Consistent Variational Autoencoder](https://arxiv.org/pdf/1610.00291.pdf)
-<br>
-<br>
-Latent space interpolation <br>
-![Latent space interpolation](https://github.com/LukeDitria/CNN-VAE/blob/master/Results/VAE.gif)
 
-## Results
+## install
+- pytorch
+- python 3.7
+- CLIP
 
-Results on validation images of the STL10 dataset at 64x64 with a latent vector size of 512 (images on top are the reconstruction)
-NOTE: RES_VAE_64_old.py was used to generate the results below<br>
-**With Perception loss**
-<br>
-![VAE Trained with perception/feature loss](https://github.com/LukeDitria/CNN-VAE/blob/master/Results/VAE_STL10_64.png)
+## load dataset
+- load CelebA
 
+## train
 
-**Without Perception loss**
-<br>
-![VAE Trained without perception/feature loss](https://github.com/LukeDitria/CNN-VAE/blob/master/Results/VAE_STL10_no_perception_64.png)
+- load CLIP embedding (embeddings.csv)
+- go to train.py
+  - set path in CelebA_CLIP
+  - go to get_data_celebA_small and get_data_celebA, set dataset paths
+  - go to main function and adjust
+  - choose VAE model you want to use, default is line 99
+        - you can use "RES_VAE_conditioned.py" by importing it there
+        - e.g. from RES_VAE_conditioned import VAE
+  - set the parameters
+    - batch_size = 128 (suggested is 256)
+    - num_epoch = 10
+    - dataset = "celeba_small"
+    - latent_dim = 128 (suggested is 512)
+    - load_checkpoint = None or use checkpoint name
+    - run_train = True
 
-## Additional Results - celeba
-The images in the STL10 have a lot of variation meaning more "features" need to be encoded in the latent space to achieve a good reconstruction. Using a data-set with less variation (and the same latent vector size) should results in a higher quality reconstructed image.
+## generate
 
-![Celeba trained with perception loss](https://github.com/LukeDitria/CNN-VAE/blob/master/Results/VAE_celeba_64.png)
+(works only when using RES_VAE_condition....)
 
-**New Model** Test images from VAE trained on CelebA at 128x128 resolution (latent space is therefore 512x2x2) using all layers of the VGG model for the perception loss
-![Celeba 128x128 test images trained with perception loss](https://github.com/LukeDitria/CNN-VAE/blob/master/Results/VAE_CelebA_all_Feat_new_model_128.png)
-
-
+- go to train.py, in main function, you can run
+  - image_generation_clip(target_attr="funny", save_path=result_folder) : generate with CLIP text embedding as condition
+  - image_generation_with_condition(test_labels) : the sampled input tensor has size input + condition
+  - image_generation() : generate from sampled input tensor with image embedding condition
+  - image_generation_zero() : the condition is zero tensor
