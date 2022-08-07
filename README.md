@@ -109,15 +109,19 @@ based on https://github.com/LukeDitria/CNN-VAE
         - CNN_VAE_celeba_resize_2022-08-07_01.36.18_epoch4.pt
         - CNN_VAE_celeba_resize_2022-08-07_01.36.18_epoch9.pt
         - CNN_VAE_celeba_resize_2022-08-07_01.36.18_epoch14.pt
-        - CNN_VAE_celeba_resize_2022-08-07_01.36.18_epoch19.pt
-        - CNN_VAE_celeba_resize_2022-08-07_01.36.18_epoch24.pt
+        - [CNN_VAE_celeba_resize_2022-08-07_01.36.18_epoch19.pt](https://drive.google.com/file/d/1md-1WFajLvTOjbRdVDVUzVGMt3juT1An/view?usp=sharing)
+        - [CNN_VAE_celeba_resize_2022-08-07_01.36.18_epoch24.pt](https://drive.google.com/file/d/1GTFSPeR8Vla-CWlsiYxxrSiIN02hR-mS/view?usp=sharing)
 
 - second best model (not-zoom-face)
     - `CNN_VAE_celeba_2022-08-04_23.22.32`
+    - [download link](https://drive.google.com/file/d/1kJGqb7POsP6IUhoCZOwYO-YQ36VYrWvy/view?usp=sharing)
+    - or `gdown https://drive.google.com/uc?id=1kJGqb7POsP6IUhoCZOwYO-YQ36VYrWvy`
     - /home/debian/home/sseeha/clip_gan/CNN_VAE/Models/model_backup
 - other (not-zoom-face)
     - CNN_VAE_celeba_2022-08-05_17.20.03_epoch9.pt
     - CNN_VAE_celeba_2022-08-05_18.07.11_epoch9.pt
+    - [CNN_VAE_celeba_2022-08-05_18.07.11_epoch9_epoch19](https://drive.google.com/file/d/12fghzRtzQ0KSbg4ONnTHTdXOpTUVWViq/view?usp=sharing)
+      - `gdown https://drive.google.com/uc?id=12fghzRtzQ0KSbg4ONnTHTdXOpTUVWViq`
 - not very good (not-zoom-face)
     - CNN_VAE_celeba_2022-08-05_17.20.03
     - CNN_VAE_celeba_2022-08-05_17.20.03_epoch9_epoch14.pt
