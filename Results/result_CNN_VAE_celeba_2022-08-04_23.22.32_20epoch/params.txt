@@ -1,0 +1,32 @@
+epoch = 10
+learning_rate = 0.0001
+train_size = 202583
+batch_size = 128 
+label_dim = 512
+image_size = 64
+latent_dim = 128
+beta = 0.1
+model checkpoint = /home/debian/home/sseeha/clip_gan/conditional_VAE/src/Models/CNN_VAE_celeba_2022-08-04_23.22.32.pt
+
+
+epoch 0, time epoch = 248.08604229800403 sec (4.134767371633401 min )
+
+epoch 1, time epoch = 245.4012941589899 sec (4.090021569316499 min )
+
+epoch 2, time epoch = 246.08004909900774 sec (4.101334151650129 min )
+
+epoch 3, time epoch = 247.5525314770057 sec (4.125875524616761 min )
+
+epoch 4, time epoch = 245.44395801299834 sec (4.0907326335499725 min )
+
+epoch 5, time epoch = 247.02630401100032 sec (4.117105066850005 min )
+
+epoch 6, time epoch = 247.00794944800145 sec (4.116799157466691 min )
+
+epoch 7, time epoch = 246.37764353300736 sec (4.1062940588834556 min )
+
+epoch 8, time epoch = 246.8624603220087 sec (4.114374338700145 min )
+
+epoch 9, time epoch = 245.6799992209999 sec (4.094666653683332 min )
+
+time total = 2473.2623545779934 sec (41.221039242966555 min )
