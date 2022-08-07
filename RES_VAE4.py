@@ -1,3 +1,5 @@
+# no condition in encoder, only in latent space before encoding
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -100,9 +102,6 @@ class Encoder(nn.Module):
         if self.training:
             mu = self.conv_mu(x)
             log_var = self.conv_log_var(x)
-            # x = [batch, latent=128, 1, 1]
-            #print("x", x.shape) #x torch.Size([48, 512, 2, 2])
-            #mu, log_var = torch.split(x, [512//2, 512//2],1)
             x = self.sample(mu, log_var)
         else:
             mu = self.conv_mu(x)
@@ -153,6 +152,7 @@ class VAE(nn.Module):
         (for a 64x64 image this is the size of the latent vector)
         """
         self.latent_dim = z
+        channel_in = 3
         self.condition_dim = condition_dim
         self.encoder = Encoder(channel_in, ch=ch, z=z)
         self.decoder = Decoder(channel_in, ch=ch, z=z + self.condition_dim)
@@ -162,10 +162,10 @@ class VAE(nn.Module):
         # image_embed = [batch, embed dim]
         #image_embed = torch.randn(x.shape[0], self.condition_dim).to(device)
         image_embed = torch.reshape(image_embed, [-1, self.condition_dim, 1, 1])
-        ones = torch.ones(x.shape[0], self.condition_dim, 64, 64).to(device)
-        condition = ones * image_embed  # [16, 32, 64, 64]
-        # x = torch.Size([128, 3, 64, 64])
-        x = torch.cat((x, condition), dim=1)
+        # ones = torch.ones(x.shape[0], self.condition_dim, 64, 64).to(device)
+        # condition = ones * image_embed  # [16, 32, 64, 64]
+        # # x = torch.Size([128, 3, 64, 64])
+        # x = torch.cat((x, condition), dim=1)
 
         # encoding  =[batch, latent=128, 1, 1]
         encoding, mu, log_var = self.encoder(x)

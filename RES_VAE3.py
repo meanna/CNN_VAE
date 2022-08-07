@@ -81,7 +81,9 @@ class Encoder(nn.Module):
         self.conv2 = ResDown(ch, 2 * ch)  # 32
         self.conv3 = ResDown(2 * ch, 4 * ch)  # 16
         self.conv4 = ResDown(4 * ch, 8 * ch)  # 8
-        self.conv5 = ResDown(8 * ch, 8 * ch)  # 4
+        #self.conv4 = ResDown(4 * ch, 8 * ch)  # 8
+        self.conv5 = ResDown(1024, 8 * ch)  # 4
+        #self.conv5 = ResDown(8 * ch, 8 * ch)  # 4
         self.conv_mu = nn.Conv2d(8 * ch, z, 2, 2)  # 2
         self.conv_log_var = nn.Conv2d(8 * ch, z, 2, 2)  # 2
 
@@ -90,19 +92,26 @@ class Encoder(nn.Module):
         eps = torch.randn_like(std)
         return mu + eps * std
 
-    def forward(self, x):
+    def forward(self, x, cond):
+        #print("x", x.shape) #x torch.Size([16, 3, 64, 64])
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
+
+        #x_cond torch.Size([48, 768, 8, 8])
+
+        #x before 4 torch.Size([16, 256, 8, 8])
+        #print("x before 4", x.shape)
         x = self.conv4(x)
-        x = self.conv5(x)
+        x_cond = torch.cat((x, cond), dim=1)
+         #x_cond torch.Size([16, 1024, 4, 4])
+        #print("x_cond", x_cond.shape)
+
+        x = self.conv5(x_cond)
 
         if self.training:
             mu = self.conv_mu(x)
             log_var = self.conv_log_var(x)
-            # x = [batch, latent=128, 1, 1]
-            #print("x", x.shape) #x torch.Size([48, 512, 2, 2])
-            #mu, log_var = torch.split(x, [512//2, 512//2],1)
             x = self.sample(mu, log_var)
         else:
             mu = self.conv_mu(x)
@@ -154,6 +163,7 @@ class VAE(nn.Module):
         """
         self.latent_dim = z
         self.condition_dim = condition_dim
+        channel_in = 3
         self.encoder = Encoder(channel_in, ch=ch, z=z)
         self.decoder = Decoder(channel_in, ch=ch, z=z + self.condition_dim)
 
@@ -161,14 +171,15 @@ class VAE(nn.Module):
 
         # image_embed = [batch, embed dim]
         #image_embed = torch.randn(x.shape[0], self.condition_dim).to(device)
-        image_embed = torch.reshape(image_embed, [-1, self.condition_dim, 1, 1])
-        ones = torch.ones(x.shape[0], self.condition_dim, 64, 64).to(device)
+        image_embed = torch.reshape(image_embed, [-1, 512, 1, 1])
+        ones = torch.ones(x.shape[0], 512, 4, 4).to(device)
         condition = ones * image_embed  # [16, 32, 64, 64]
         # x = torch.Size([128, 3, 64, 64])
-        x = torch.cat((x, condition), dim=1)
+        #x = torch.cat((x, condition), dim=1)
+        #print("condition2", condition.shape) # condition2 torch.Size([112, 512, 4, 4])
 
         # encoding  =[batch, latent=128, 1, 1]
-        encoding, mu, log_var = self.encoder(x)
+        encoding, mu, log_var = self.encoder(x, condition)
 
         # encoding = [batch, latent + image_embed, 1, 1]
         encoding = torch.cat((encoding, image_embed), dim=1)

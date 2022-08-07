@@ -16,7 +16,7 @@ import torchvision.utils as vutils
 from torch.utils.data import Dataset, DataLoader
 from tqdm.notebook import trange, tqdm
 
-from RES_VAE import VAE
+from RES_VAE0 import VAE
 from vgg19 import VGG19
 
 # ---------------------------------------------------------------
