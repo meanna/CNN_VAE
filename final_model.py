@@ -101,20 +101,20 @@ else:
     model_name = f"CNN_VAE_{dataset}_{timestamp_str}"  # "STL10_8" #"STL10_8" #STL10_8_64.pt
 
 if model_name == "CNN_VAE_celeba_2022-08-05_01.49.10":
-    from RES_VAE_conditioned_encoder_layer5 import VAE
+    from RES_VAE3 import VAE
     # latent_dim = 512
 elif model_name in ["CNN_VAE_celeba_2022-08-05_03.20.52", "CNN_VAE_celeba_2022-08-05_11.31.54"]:
-    from RES_VAE_conditioned_encoder_layer4 import VAE
+    from RES_VAE2 import VAE
     # latent_dim = 512
 
 elif model_name in ["CNN_VAE_celeba_2022-08-04_23.22.32"]:  # best model
-    from RES_VAE_conditioned_encoder_layer4 import VAE
+    from RES_VAE2 import VAE
     # latent_dim = 128
 
 elif model_name in ["CNN_VAE_celeba_2022-08-05_14.32.29"]:
-    from RES_VAE_conditioned_only_latent import VAE
+    from RES_VAE4 import VAE
 else:
-    from RES_VAE_conditioned import VAE
+    from RES_VAE2 import VAE
 
 
 # ---------------------------------------------------------------
@@ -209,6 +209,7 @@ def get_data_celebA(transform, batch_size):
 
 def get_data_celebA_resized(transform, batch_size):
     # data_root = "../../datasets/celeba_small/celeba/"
+    # "../datasets/resized_celebA3_128/ "celebA"
     data_root = "../datasets/resized_celebA3/"
     training_data = CelebA_CLIP(root=data_root,
                                 transform=transform,
@@ -257,7 +258,7 @@ if dataset == "celeba_resize":
     #transform = T.Compose([T.Resize((image_size,image_size)), T.ToTensor()])
     #transform = T.Compose([T.Resize(image_size), T.ToTensor()])
     transform = T.Compose([T.ToTensor()])
-    trainloader, testloader, train_size = get_data_celebA(transform, batch_size)
+    trainloader, testloader, train_size = get_data_celebA_resized(transform, batch_size)
 
 elif dataset == "celeba_small":
     transform = T.Compose([T.CenterCrop(178), T.Resize((image_size, image_size)), T.ToTensor()])
@@ -495,9 +496,9 @@ def image_generation_ones(save_folder=None):
     generated = torch.sigmoid(logits)
 
     if save_folder:
-        save_path = os.path.join(save_folder, "generation_conditioned_with_zero.png")
+        save_path = os.path.join(save_folder, "generation_conditioned_with_ones.png")
     else:
-        save_path = os.path.join(result_folder, "generation_conditioned_with_zero.png")
+        save_path = os.path.join(result_folder, "generation_conditioned_with_ones.png")
 
     # vutils.save_image(generated, save_path)
     # print("save image at", save_path)

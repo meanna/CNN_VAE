@@ -1,0 +1,62 @@
+epoch = 25
+learning_rate = 0.0001
+train_size = 202583
+batch_size = 128 
+label_dim = 512
+image_size = 64
+latent_dim = 128
+beta = 0.1
+model checkpoint = /home/debian/home/sseeha/clip_gan/CNN_VAE/Models/CNN_VAE_celeba_resize_2022-08-07_01.36.18.pt
+
+
+epoch 0, time epoch = 254.7820360310143 sec (4.2463672671835715 min )
+
+epoch 1, time epoch = 259.39453547701123 sec (4.323242257950187 min )
+
+epoch 2, time epoch = 257.05991796197486 sec (4.284331966032914 min )
+
+epoch 3, time epoch = 261.0760586389806 sec (4.35126764398301 min )
+
+epoch 4, time epoch = 259.7954024929786 sec (4.329923374882977 min )
+
+epoch 5, time epoch = 258.9995021369832 sec (4.31665836894972 min )
+
+epoch 6, time epoch = 259.16220007897937 sec (4.319370001316323 min )
+
+epoch 7, time epoch = 256.4176786839962 sec (4.273627978066603 min )
+
+epoch 8, time epoch = 261.0556030639855 sec (4.350926717733091 min )
+
+epoch 9, time epoch = 259.2154016350105 sec (4.320256693916842 min )
+
+epoch 10, time epoch = 260.2031704550027 sec (4.336719507583378 min )
+
+epoch 11, time epoch = 258.99424820399145 sec (4.316570803399857 min )
+
+epoch 12, time epoch = 259.96016421102104 sec (4.332669403517017 min )
+
+epoch 13, time epoch = 257.2669284940057 sec (4.287782141566762 min )
+
+epoch 14, time epoch = 258.0010913310107 sec (4.300018188850178 min )
+
+epoch 15, time epoch = 257.3276206800074 sec (4.288793678000123 min )
+
+epoch 16, time epoch = 258.30376814701594 sec (4.305062802450266 min )
+
+epoch 17, time epoch = 258.0613325270242 sec (4.301022208783737 min )
+
+epoch 18, time epoch = 256.86522587700165 sec (4.281087097950027 min )
+
+epoch 19, time epoch = 260.23469535500044 sec (4.3372449225833405 min )
+
+epoch 20, time epoch = 255.71372657601023 sec (4.261895442933504 min )
+
+epoch 21, time epoch = 258.17646586798946 sec (4.302941097799825 min )
+
+epoch 22, time epoch = 259.2629922729975 sec (4.321049871216625 min )
+
+epoch 23, time epoch = 260.28955283301184 sec (4.3381592138835305 min )
+
+epoch 24, time epoch = 260.5400403109961 sec (4.342334005183269 min )
+
+time total = 6894.501274338982 sec (114.90835457231636 min )
