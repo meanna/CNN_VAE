@@ -1,4 +1,4 @@
-# CNN-VAE
+# conditional CNN-VAE
 
 based on https://github.com/LukeDitria/CNN-VAE
 
