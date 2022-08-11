@@ -1,5 +1,6 @@
 import math
 import os
+import sys
 import time
 from ast import literal_eval
 from datetime import datetime
@@ -18,10 +19,11 @@ import torchvision.transforms as T
 import torchvision.utils as vutils
 from torch.utils.data import Dataset, DataLoader
 from tqdm.notebook import trange, tqdm
+import random
 
 from vgg19 import VGG19
 
-torch.manual_seed(0)
+#torch.manual_seed(0)
 clip_model = None
 # ---------------------------------------------------------------
 date_time_obj = datetime.now()
@@ -32,49 +34,33 @@ start_time_total = time.perf_counter()
 # Parameter you can change
 
 
-batch_size = 128
+batch_size = 32
+test_batch = 32
+test_size = 128
 num_epoch = 25
 save_model_every = 5
 # Available datasets: celeba_small, celeba, celeba_resize
-dataset = "celeba_resize"  # < --------------change this!
-print("dataset = ", dataset)
-latent_dim = 128  # < --------------change this!
+dataset = "celeb"  # < --------------change this!
 
+latent_dim = 128  # < --------------change this!
+# "../conditional_VAE/src/embeddings.csv" or "./embeddings_128.csv"
+embedding_file = "./embeddings_128_random.csv"
 # ---------------------------------------------------------------
 # !! no "pt"
 # set to None if you do not want to load a checkpoint
 #
-load_checkpoint = None  # "CNN_VAE_celeba_2022-08-04_23.22.32"
-run_train = True # < --------------change this!
-
-# Checkpoint os pretrained models
-# "CNN_VAE_celeba_small_2022-08-04_21.40.10" (small, for testing)
-# "CNN_VAE_celeba_2022-08-04_18.05.43" (large model trained for 20 epochs)
-# "celebA_64_8_epoch_latent_dim_128"
-# "CNN_VAE_celeba_2022-08-04_23.22.32" (add condition to layer 4, trained for 10 epochs, good result, latent = 128)
-# RES_VAE2, run2
-# 10 epochs version is in the backup
-# CNN_VAE_celeba_2022-08-05_01.49.10 #(VAE3) (add condition to layer 5)
-# CNN_VAE_celeba_2022-08-05_03.20.52  #python run2.py (add condition to layer 4)  VAE2 , latent dim = 128
-# CNN_VAE_celeba_2022-08-05_11.31.54 # run2.py (add condition to layer 4)  VAE2, latent dim = 512 (quality not good,
-# 10 epoch)
+load_checkpoint = "CNN_VAE_celeba_resize_2022-08-07_01.36.18_epoch24"
+run_train = False # < --------------change this!
 
 
-# continue training  "CNN_VAE_celeba_2022-08-04_23.22.32" for 10 epochs, ...
-# CNN_VAE_celeba_2022-08-05_14.32.29  # run4 (condition only in latent) #not very good
-# replicate the best model again, find epoch that is best
-# CNN_VAE_celeba_2022-08-05_17.20.03 # run5, latent 128 # not good recon and generate result
-# CNN_VAE_celeba_2022-08-05_18.07.11 # run6, latent 512 # better recon, text to image is better, blur but generate
-# same faces
-# continue 10 epoch each
 # ---------------------------------------------------------------
 # logging
 if run_train and load_checkpoint:
-    print("Train with pretrained model...")
+    print("Train with pretrained model...", load_checkpoint)
 elif run_train and load_checkpoint is None:
     print("Train from scratch...")
 elif load_checkpoint is not None and not run_train:
-    print("Only load pretrained model, do not train...")
+    print("Only load pretrained model, do not train...", load_checkpoint)
 elif load_checkpoint is None and not run_train:
     # print("Set run_train to True or give a checkpoint")
     raise SystemExit("!Set run_train to True or give a checkpoint...")
@@ -103,20 +89,31 @@ else:
 if model_name == "CNN_VAE_celeba_2022-08-05_01.49.10":
     from RES_VAE3 import VAE
     # latent_dim = 512
+
 elif model_name in ["CNN_VAE_celeba_2022-08-05_03.20.52", "CNN_VAE_celeba_2022-08-05_11.31.54"]:
     from RES_VAE2 import VAE
     # latent_dim = 512
 
-elif model_name in ["CNN_VAE_celeba_2022-08-04_23.22.32"]:  # best model
+elif model_name in ["CNN_VAE_celeba_2022-08-04_23.22.32", "CNN_VAE_celeba_2022-08-04_23.22.32_epoch20.pt"]:  # best model not crop face
     from RES_VAE2 import VAE
     # latent_dim = 128
 
+elif model_name in ["CNN_VAE_celeba_resize_2022-08-07_01.36.18_epoch24"]:  # best model trained on crop face
+    from RES_VAE2 import VAE
+    #dataset = "celeba_resize"
+
 elif model_name in ["CNN_VAE_celeba_2022-08-05_14.32.29"]:
     from RES_VAE4 import VAE
+
 else:
     from RES_VAE2 import VAE
 
+if "CNN_VAE_celeba_resize" in model_name:
+    dataset = "celeba_resize"
 
+elif "CNN_VAE_celeba" in model_name:
+    dataset = "celeba"
+print("dataset = ", dataset)
 # ---------------------------------------------------------------
 class CelebA_CLIP(Datasets.ImageFolder):
     def __init__(
@@ -189,41 +186,47 @@ def get_data_STL10(transform, batch_size, download=True, root="./input"):
     return trainloader, testloader
 
 
-def get_data_celebA(transform, batch_size):
+def get_data_celebA(transform, batch_size ,embedding_file):
     # data_root = "../../datasets/celeba_small/celeba/"
     data_root = "../datasets/celeba/"
     training_data = CelebA_CLIP(root=data_root,
                                 transform=transform,
                                 image_folder="img_align_celeba",
-                                clip_embeddings_csv="../conditional_VAE/src/embeddings.csv")
+                                clip_embeddings_csv=embedding_file) #"../conditional_VAE/src/embeddings.csv"
     print("dataset size", len(training_data))  # 202599
-    test_size = 16
+
     train_size = len(training_data) - test_size
     trainset, testset = torch.utils.data.random_split(training_data, [train_size, test_size])
-
-    trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=8)
     testloader = DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=8)
+    if train_size > 0:
+        trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=8)
+        return trainloader, testloader, train_size
+    else:
+
+        return None, testloader, train_size
     print("Done load dataset")
-    return trainloader, testloader, train_size
 
 
-def get_data_celebA_resized(transform, batch_size):
+def get_data_celebA_resized(transform, batch_size, embedding_file):
     # data_root = "../../datasets/celeba_small/celeba/"
     # "../datasets/resized_celebA3_128/ "celebA"
     data_root = "../datasets/resized_celebA3/"
     training_data = CelebA_CLIP(root=data_root,
                                 transform=transform,
                                 image_folder="celebA",
-                                clip_embeddings_csv="../conditional_VAE/src/embeddings.csv")
+                                clip_embeddings_csv=embedding_file)
     print("dataset size", len(training_data))  # 202599
-    test_size = 16
+
     train_size = len(training_data) - test_size
     trainset, testset = torch.utils.data.random_split(training_data, [train_size, test_size])
-
-    trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=8)
     testloader = DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=8)
+    if train_size > 0:
+        trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=8)
+        return trainloader, testloader, train_size
+    else:
+
+        return None, testloader, train_size
     print("Done load dataset")
-    return trainloader, testloader, train_size
 
 
 def get_data_celebA_small(transform, batch_size):
@@ -234,15 +237,28 @@ def get_data_celebA_small(transform, batch_size):
                                 clip_embeddings_csv="./embeddings_128.csv")
 
     print("dataset size", len(training_data))  # 128
-    test_size = 16
+
     train_size = len(training_data) - test_size
     trainset, testset = torch.utils.data.random_split(training_data, [train_size, test_size])
-
-    trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=8)
     testloader = DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=8)
-    print("Done load dataset")
-    return trainloader, testloader, train_size
+    if train_size > 0:
+        trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=8)
+        return trainloader, testloader, train_size
+    else:
 
+        return None, testloader, train_size
+    print("Done load dataset")
+
+
+def get_test_set():
+    data_root = "../datasets/resized_celebA3/"
+    testset = CelebA_CLIP(root=data_root,
+                                transform=transform,
+                                image_folder="celebA",
+                                clip_embeddings_csv=embedding_file)
+    print("dataset size", len(testset))  # 202599
+    testloader = DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=8)
+    return testloader
 
 # ---------------------------------------------------------------
 if dataset == "celeba":
@@ -250,25 +266,32 @@ if dataset == "celeba":
     #transform = T.Compose([T.Resize((image_size,image_size)), T.ToTensor()])
     #transform = T.Compose([T.Resize(image_size), T.ToTensor()])
     #transform = T.Compose([T.ToTensor()])
-    trainloader, testloader, train_size = get_data_celebA(transform, batch_size)
+    trainloader, testloader, train_size = get_data_celebA(transform, batch_size, embedding_file)
 
 
-if dataset == "celeba_resize":
+elif dataset == "celeba_resize":
     #transform = T.Compose([T.CenterCrop(178),T.Resize((image_size,image_size)), T.ToTensor()])
     #transform = T.Compose([T.Resize((image_size,image_size)), T.ToTensor()])
     #transform = T.Compose([T.Resize(image_size), T.ToTensor()])
     transform = T.Compose([T.ToTensor()])
-    trainloader, testloader, train_size = get_data_celebA_resized(transform, batch_size)
+    trainloader, testloader, train_size = get_data_celebA_resized(transform, batch_size,embedding_file)
 
 elif dataset == "celeba_small":
     transform = T.Compose([T.CenterCrop(178), T.Resize((image_size, image_size)), T.ToTensor()])
     trainloader, testloader, train_size = get_data_celebA_small(transform, batch_size)
-else:
+
+
+elif dataset == "STL10":
     transform = T.Compose([T.Resize(image_size), T.ToTensor()])
     trainloader, testloader = get_data_STL10(transform, batch_size, download=True, root=dataset_root)
 
+else:
+    print("dataset name is wrong")
+    sys.exit()
+
 # ---------------------------------------------------------------
 # get a test image batch from the testloader to visualise the reconstruction quality
+testloader = get_test_set()
 dataiter = iter(testloader)
 test_images, test_labels = dataiter.next()
 print("load test batch")
@@ -421,13 +444,15 @@ def convert_batch_to_image_grid(image_batch, dim=64):
 import torchvision
 
 
-def save_image_grid(img_tensor, save_path):
+def save_image_grid(img_tensor, save_path, title=None):
     if torch.is_tensor(img_tensor):
         img_tensor = img_tensor.cpu()
 
     grid_img = torchvision.utils.make_grid(img_tensor, scale_each=True)
-    plt.figure(figsize=(20, 20))
+    plt.figure(figsize=(10, 10))
     plt.imshow(grid_img.permute(1, 2, 0))
+    if title:
+        plt.title(title, fontsize=20, pad=5)
     plt.axis('off')
     plt.show()
     plt.savefig(os.path.join(save_path), dpi=100, bbox_inches='tight')
@@ -447,13 +472,32 @@ def image_generation(save_folder=None):
     it has the shape latent_dim + condition dim, meaning there is no additional condition.
 
     """
-    batch = 16
+    batch = test_batch
     latent_dim = vae_net.latent_dim
     # sample both initial input and condition
-    mu = torch.zeros(batch, latent_dim + condition_dim, 1, 1) + 1.0
-    log_var = torch.zeros(batch, latent_dim + condition_dim, 1, 1) + 0.3
+    #mu = torch.zeros(batch, latent_dim + condition_dim, 1, 1) + 1.0
+    #log_var = torch.zeros(batch, latent_dim + condition_dim, 1, 1) + 0.3
     # print(mu.shape)
-    z_cond = vae_net.sample(mu.to(device), log_var.to(device))
+
+    mu_list = []
+    log_var_list = []
+    for _ in range(batch):
+        mean = random.uniform(0.0, 1.0)
+        log_var = random.uniform(0.0, 1.0)
+        z_mu = torch.zeros(latent_dim + condition_dim, 1, 1) + mean
+        z_log_var = torch.zeros(latent_dim + condition_dim, 1, 1) + log_var
+        mu_list.append(z_mu)
+        log_var_list.append(z_log_var)
+        #eps = torch.normal(mean=0.0, std=1.0, size=(latent_dim, 1, 1))
+        #z = z_mean + math.exp(z_log_var * .5) * eps
+        #z_list.append(z)
+
+    mu_batch = torch.stack(mu_list, dim=0) #[16, 512, 1, 1]
+    log_var_batch = torch.stack(log_var_list, dim=0)
+    # z = z.to(device)
+    # z_cond = torch.cat((z, ones_tensor), dim=1)
+
+    z_cond = vae_net.sample(mu_batch.to(device), log_var_batch.to(device))
     # print("zcond",z_cond.shape) #zcond torch.Size([128, 512, 1, 1])
     logits = vae_net.decoder(z_cond)
     generated = torch.sigmoid(logits)
@@ -468,7 +512,7 @@ def image_generation(save_folder=None):
 
 
 def image_generation_ones(save_folder=None):
-    batch = 16
+    batch = test_batch
     latent_dim = vae_net.latent_dim
     # sample both initial input and condition
     # mu = torch.zeros(batch, latent_dim, 1, 1) + 1.0
@@ -478,11 +522,22 @@ def image_generation_ones(save_folder=None):
     # zero_tensor = torch.zeros(batch, condition_dim, 1, 1).to(device)
     ones_tensor = torch.ones(batch, condition_dim, 1, 1).to(device)
 
-    z_mean = 1.0
-    z_log_var = 0.3
+    # z_mean = 1.0
+    # z_log_var = 0.3
+    #
+    # eps = torch.randn(batch, latent_dim, 1, 1)
+    # z = z_mean + math.exp(z_log_var * .5) * eps
+    # z = z.to(device)
 
-    eps = torch.randn(batch, latent_dim, 1, 1)
-    z = z_mean + math.exp(z_log_var * .5) * eps
+    z_list = []
+    for _ in range(batch):
+        z_mean = random.uniform(0.0, 1.0)
+        z_log_var = random.uniform(0.0, 1.0)
+        eps = torch.normal(mean=0.0, std=1.0, size=(latent_dim, 1, 1))
+        z = z_mean + math.exp(z_log_var * .5) * eps
+        z_list.append(z)
+
+    z = torch.stack(z_list, dim=0) #[16, 512, 1, 1]
     z = z.to(device)
 
     # net mu [112, 128, 1, 1]
@@ -508,16 +563,20 @@ def image_generation_ones(save_folder=None):
 
 
 def image_generation_with_condition(test_labels, save_folder=None):
+    """Redundant function"""
     batch = test_labels.shape[0]
 
     latent_dim = vae_net.latent_dim
+    # generate z (method1)
     # sample both initial input and condition
     # mu = torch.zeros(batch, latent_dim, 1, 1) + 1.0
     # log_var = torch.zeros(batch, latent_dim, 1, 1) + 0.3
     #
     # # z = [16, 3, 64, 64]
     # z = vae_net.sample(mu.to(device), log_var.to(device))
+    # ------------------------------------------------------------#
 
+    # generate z (method2)
     z_mean = 1.0
     z_log_var = 0.3
 
@@ -526,6 +585,20 @@ def image_generation_with_condition(test_labels, save_folder=None):
     eps = torch.normal(mean=0.0, std=1.0, size=(batch, latent_dim, 1, 1))
     z = z_mean + math.exp(z_log_var * .5) * eps
     z = z.to(device)
+    # ------------------------------------------------------------#
+
+    # generate z (method3)
+    # z_list = []
+    # for _ in range(batch):
+    #     z_mean = random.uniform(0.0, 1.0)
+    #     z_log_var = random.uniform(0.0, 1.0)
+    #     eps = torch.normal(mean=0.0, std=1.0, size=(latent_dim, 1, 1))
+    #     z = z_mean + math.exp(z_log_var * .5) * eps
+    #     z_list.append(z)
+    #
+    # z = torch.stack(z_list, dim=0) #[16, 512, 1, 1]
+    # z = z.to(device)
+    # ------------------------------------------------------------#
 
     # vae_net.train()
     # with torch.no_grad():
@@ -561,6 +634,7 @@ def image_generation_with_condition(test_labels, save_folder=None):
     print("save image at", save_path_ori)
 
 
+
 def image_generation_clip(target_attr=None, save_folder=None):
     """
     Generates and plots a batch of images with specific attributes (if given).
@@ -572,7 +646,7 @@ def image_generation_clip(target_attr=None, save_folder=None):
         clip_model, preprocess = clip.load("ViT-B/32", device=device)
         clip_model.cuda().eval()
         print("Load clip")
-    batch = 16
+    batch = test_batch
     # Vector of user-defined attributes.
     if target_attr:
 
@@ -606,6 +680,16 @@ def image_generation_clip(target_attr=None, save_folder=None):
     #
     condition = torch.reshape(labels, [batch, vae_net.condition_dim, 1, 1])
 
+    # generate z (method1)
+    # sample both initial input and condition
+    # mu = torch.zeros(batch, latent_dim, 1, 1) + 1.0
+    # log_var = torch.zeros(batch, latent_dim, 1, 1) + 0.3
+    #
+    # # z = [16, 3, 64, 64]
+    # z = vae_net.sample(mu.to(device), log_var.to(device))
+    # ------------------------------------------------------------#
+
+    # generate z (method2)
     z_mean = 1.0
     z_log_var = 0.3
 
@@ -614,6 +698,21 @@ def image_generation_clip(target_attr=None, save_folder=None):
     eps = torch.normal(mean=0.0, std=1.0, size=(batch, latent_dim, 1, 1))
     z = z_mean + math.exp(z_log_var * .5) * eps
     z = z.to(device)
+    # ------------------------------------------------------------#
+
+    # generate z (method3)
+    # z_list = []
+    # for _ in range(batch):
+    #     z_mean = random.uniform(0.0, 1.0)
+    #     z_log_var = random.uniform(0.0, 1.0)
+    #     eps = torch.normal(mean=0.0, std=1.0, size=(latent_dim, 1, 1))
+    #     z = z_mean + math.exp(z_log_var * .5) * eps
+    #     z_list.append(z)
+    #
+    # z = torch.stack(z_list, dim=0) #[16, 512, 1, 1]
+    # z = z.to(device)
+    # ------------------------------------------------------------#
+
 
     # print("z", z.shape)
     # print("condition", condition.shape)
@@ -625,22 +724,132 @@ def image_generation_clip(target_attr=None, save_folder=None):
 
     # vutils.save_image(generated, save_path)
     # print("save image at", save_path)
-    save_image_grid(generated, save_path)
+    save_image_grid(generated, save_path, title=prompt)
     print("save image at", save_path)
 
+def image_generation_clip_interpolation(target_attr, num_images=1):
+    """
+    Generates and plots a batch of images with specific attributes (if given).
 
-def reconstruct_images(save_folder=None):
-    recon_data, mu, var = vae_net(test_images.to(device), test_labels.to(device))
-    recon_images = torch.cat((torch.sigmoid(recon_data).cpu(), test_images.cpu()), 2)
+    - list target_attr : list of desired attributes [default None]
+    """
+    global clip_model
+    if clip_model is None:
+        clip_model, preprocess = clip.load("ViT-B/32", device=device)
+        clip_model.cuda().eval()
+        print("Load clip")
 
-    if save_folder:
-        save_path = os.path.join(save_folder, "recon.png")
+    result_batch = []
+    if num_images < (test_images.shape[0]):
+        num = num_images  # range(images.shape[0])
     else:
-        save_path = os.path.join(result_folder, "recon.png")
-    # vutils.save_image(recon_images, save_path)
-    # print("save image at", save_path)
-    save_image_grid(recon_images, save_path)
-    print("save image at", save_path)
+        num = test_images.shape[0]
+
+    for i in range(num):
+        # reconstructed_images = []
+        modified_images = []
+        img = test_images[i][np.newaxis, ...]
+        label = test_labels[i][np.newaxis, ...]
+        vae_net.eval()
+        for beta in reversed(range(0, 10)):
+            image_embed_factor = beta * 0.1
+            recon_data, img_z, var = vae_net(img.to(device), label.to(device))
+
+            #print("img_z", img_z.shape) # img_z torch.Size([1, 128, 1, 1])
+            # reconstructed_images.append(model_output['recon_img'].numpy()[0, :, :, :])
+            if target_attr is None:
+                raise ValueError('target_attr can not be None')
+                sys.exit()
+            else:
+                text = clip.tokenize([target_attr]).to(device)
+                with torch.no_grad():
+                    text_features = clip_model.encode_text(text)
+                # labels_ = np.expand_dims(labels[i], axis=0)  # (1, 512) -- not needed
+                # type(labels[i] #<class 'numpy.ndarray'> of shape (512,)
+                # condition with input image embeddings + given text embeddings
+                # modified_label = (test_labels[i] * image_embed_factor) + (
+                #         text_features.cpu().detach().numpy() * (1.0 - image_embed_factor))  # (1, 512)
+
+                modified_label = (label.to(device) * image_embed_factor) + (
+                        text_features * (1.0 - image_embed_factor))  # (1, 512)
+                modified_label = modified_label.unsqueeze(2).unsqueeze(3)
+
+                #print("modified_label", modified_label.shape) #modified_label torch.Size([1, 512])
+                # condition with only input image embeddings
+                # modified_label = text_features.cpu()
+
+            # modified_label = (1, 512)
+            z_cond = torch.cat((img_z, modified_label), dim=1)
+            logits = vae_net.decoder(z_cond)
+            generated = torch.sigmoid(logits).detach().cpu().numpy()
+            modified_images.append(generated[0, :, :, :])
+        #result = np.asarray(modified_images, dtype='float32')  # (10, 64, 64, 3)
+        modified_images = np.array(modified_images)
+        result = torch.tensor(modified_images)
+        result_batch.append(result)
+        # break
+    return result_batch
+
+
+
+def save_image_grid_interpolation(img_tensor, save_path, title):
+    if torch.is_tensor(img_tensor):
+        img_tensor = img_tensor.cpu()
+
+    grid_img = torchvision.utils.make_grid(img_tensor, scale_each=True,nrow=5)
+    plt.figure(figsize=(10, 10))
+    plt.imshow(grid_img.permute(1, 2, 0))
+    if title:
+        plt.title(title, fontsize=20, pad=5)
+    plt.axis('off')
+    plt.show()
+    plt.savefig(os.path.join(save_path), dpi=100, bbox_inches='tight')
+    print(f"image is saved as {save_path}")
+
+def plot_interpolation(target_attr, num_images=1, save_folder=None):
+    batch_result_list = image_generation_clip_interpolation(target_attr=target_attr, num_images=num_images)
+    for i, result in enumerate(batch_result_list):
+        file_name = f"modified_images_{target_attr}_{i}.png"
+        if save_folder:
+            save_path = os.path.join(save_folder, file_name)
+        else:
+            save_path = os.path.join(result_folder, file_name)
+
+        save_image_grid_interpolation(result , save_path, title = target_attr)
+
+
+
+
+
+def reconstruct_images(save_folder=None, save_recon_and_ori_together=False):
+    recon_data, mu, var = vae_net(test_images.to(device), test_labels.to(device))
+    if save_folder:
+        save_folder_ = save_folder
+    else:
+        save_folder_ = result_folder
+
+    if save_recon_and_ori_together:
+        recon_images = torch.cat((torch.sigmoid(recon_data).cpu(), test_images.cpu()), 2)
+
+        save_path = os.path.join(save_folder_, "recon.png")
+
+        # vutils.save_image(recon_images, save_path)
+        # print("save image at", save_path)
+        save_image_grid(recon_images, save_path)
+        print("save image at", save_path)
+    else:
+        recon_images = torch.sigmoid(recon_data).cpu()
+
+        save_path = os.path.join(save_folder_, "recon.png")
+        # vutils.save_image(recon_images, save_path)
+        # print("save image at", save_path)
+        save_image_grid(recon_images, save_path)
+        print("save image at", save_path)
+
+        save_path = os.path.join(save_folder_, "ori.png")
+        save_image_grid(test_images.cpu(), save_path)
+        print("save image at", save_path)
+
 
 
 def attribute_manipulation(target_attr=None, image_embed_factor=0.5, save_folder=None):
@@ -801,26 +1010,55 @@ def train():
 if __name__ == "__main__":
     if run_train:
         train()
-    attribute_manipulation(target_attr="wear reading glasses", image_embed_factor=0.5, save_folder=result_folder)
-    image_generation_clip(target_attr="old woman", save_folder=result_folder)
-    # image_generation_clip(target_attr="funny", save_path=result_folder)
-    # image_generation_clip(target_attr="a woman with a baseball cap", save_path=result_folder)
-    # image_generation_clip(target_attr="a woman with a bang", save_path=result_folder)
-    # image_generation_clip(target_attr="crying", save_path=result_folder)
-    # image_generation_clip(target_attr="very sad", save_path=result_folder)
-    # image_generation_clip(target_attr="a photo of a sad person", save_path=result_folder)
-    # image_generation_clip(target_attr="smiling", save_path=result_folder)
-    # image_generation_clip(target_attr="smiling woman", save_path=result_folder)
-    # image_generation_clip(target_attr="baby", save_path=result_folder)
-    # image_generation_clip(target_attr="dog", save_path=result_folder)
-    # image_generation_clip(target_attr="hand", save_path=result_folder)
-    # image_generation_clip(target_attr="a man", save_path=result_folder)
-    # image_generation_clip(target_attr="asian", save_path=result_folder)
-    # image_generation_clip(target_attr="a red hair woman", save_path=result_folder)
-    # image_generation_clip(target_attr="wearing glasses", save_path=result_folder)
-    # image_generation_clip(target_attr="a photo of a person wearing glasses", save_path=result_folder)
+    result_folder = "./Results/temp"
+    #attribute_manipulation(target_attr="wear reading glasses", image_embed_factor=0.5, save_folder=result_folder)
+    test_images, test_labels = dataiter.next()
+    test_images, test_labels = dataiter.next()
+    test_images, test_labels = dataiter.next()
+
+    #plot_interpolation(target_attr="smiling", num_images=2, save_folder=None)
+    image_generation_clip(target_attr="wear glasses", save_folder=result_folder)
+    # image_generation_clip(target_attr="male with bushy eyebrows", save_folder=result_folder)
+    # image_generation_clip(target_attr="male wearing glasses", save_folder=result_folder)
+    # image_generation_clip(target_attr="young male with goatee", save_folder=result_folder)
+    # image_generation_clip(target_attr="male with double chin and no beard", save_folder=result_folder)
+    # image_generation_clip(target_attr="woman with freckles", save_folder=result_folder)
+    # image_generation_clip(target_attr="asian woman with a mole on the upper lip", save_folder=result_folder)
+    # image_generation_clip(target_attr="woman wearing a red headscarf", save_folder=result_folder)
+    # image_generation_clip(target_attr="young woman with a tattoo on the cheek", save_folder=result_folder)
+    # image_generation_clip(target_attr="angry", save_folder=result_folder)
+    # image_generation_clip(target_attr="shocked", save_folder=result_folder)
+    # image_generation_clip(target_attr="happy", save_folder=result_folder)
+    # image_generation_clip(target_attr="sad", save_folder=result_folder)
+    # image_generation_clip(target_attr="toothless old man smiling", save_folder=result_folder)
+    # image_generation_clip(target_attr="hairless african man", save_folder=result_folder)
+    # image_generation_clip(target_attr="woman facing left", save_folder=result_folder)
+    # image_generation_clip(target_attr="man looking up", save_folder=result_folder)
+    # image_generation_clip(target_attr="a photo of a woman with rosy cheeks", save_folder=result_folder)
+    # image_generation_clip(target_attr="a painting of a woman with rosy cheeks", save_folder=result_folder)
+    # image_generation_clip(target_attr="Taylor Swift and Harry Styles lookalike", save_folder=result_folder)
+    # image_generation_clip(target_attr="Taylor Swift lookalike", save_folder=result_folder)
+    # image_generation_clip(target_attr="Harry Styles", save_folder=result_folder)
     #
-    reconstruct_images(save_folder=result_folder)
-    image_generation_with_condition(test_labels, save_folder=result_folder)
-    image_generation(save_folder=result_folder)
-    image_generation_ones(save_folder=result_folder)
+    #
+    # image_generation_clip(target_attr="a woman with a baseball cap", save_folder=result_folder)
+    # image_generation_clip(target_attr="a woman with a bang", save_folder=result_folder)
+    # image_generation_clip(target_attr="crying", save_folder=result_folder)
+    # image_generation_clip(target_attr="very sad", save_folder=result_folder)
+    # image_generation_clip(target_attr="a photo of a sad person", save_folder=result_folder)
+    # image_generation_clip(target_attr="smiling", save_folder=result_folder)
+    # image_generation_clip(target_attr="smiling woman", save_folder=result_folder)
+    # image_generation_clip(target_attr="baby", save_folder=result_folder)
+    # image_generation_clip(target_attr="dog", save_folder=result_folder)
+    # image_generation_clip(target_attr="hand", save_folder=result_folder)
+    # image_generation_clip(target_attr="a man", save_folder=result_folder)
+    # image_generation_clip(target_attr="asian", save_folder=result_folder)
+    # image_generation_clip(target_attr="a red hair woman", save_folder=result_folder)
+    # image_generation_clip(target_attr="wearing glasses", save_folder=result_folder)
+    #image_generation_clip(target_attr=None, save_folder=result_folder)
+    #image_generation_clip(target_attr="a photo of a person wearing glasses", save_folder=result_folder)
+    #
+    #reconstruct_images(save_folder=result_folder)
+    #image_generation_with_condition(test_labels, save_folder=result_folder)
+    #image_generation(save_folder=result_folder)
+    #image_generation_ones(save_folder=result_folder)
