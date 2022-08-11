@@ -1,6 +1,5 @@
 import math
 import os
-import random
 import sys
 import time
 from ast import literal_eval
@@ -466,173 +465,6 @@ def save_each_image(img_tensor):
         plt.savefig(os.path.join(save_dir, "Results", im_name), dpi=200, bbox_inches='tight')
 
 
-def image_generation(save_folder=None):
-    """input to the model is sampled input from mu= 1.0 and log_var = 0.3,
-    it has the shape latent_dim + condition dim, meaning there is no additional condition.
-
-    """
-    batch = test_batch
-    latent_dim = vae_net.latent_dim
-    # sample both initial input and condition
-    # mu = torch.zeros(batch, latent_dim + condition_dim, 1, 1) + 1.0
-    # log_var = torch.zeros(batch, latent_dim + condition_dim, 1, 1) + 0.3
-    # print(mu.shape)
-
-    mu_list = []
-    log_var_list = []
-    for _ in range(batch):
-        mean = random.uniform(0.0, 1.0)
-        log_var = random.uniform(0.0, 1.0)
-        z_mu = torch.zeros(latent_dim + condition_dim, 1, 1) + mean
-        z_log_var = torch.zeros(latent_dim + condition_dim, 1, 1) + log_var
-        mu_list.append(z_mu)
-        log_var_list.append(z_log_var)
-        # eps = torch.normal(mean=0.0, std=1.0, size=(latent_dim, 1, 1))
-        # z = z_mean + math.exp(z_log_var * .5) * eps
-        # z_list.append(z)
-
-    mu_batch = torch.stack(mu_list, dim=0)  # [16, 512, 1, 1]
-    log_var_batch = torch.stack(log_var_list, dim=0)
-    # z = z.to(device)
-    # z_cond = torch.cat((z, ones_tensor), dim=1)
-
-    z_cond = vae_net.sample(mu_batch.to(device), log_var_batch.to(device))
-    # print("zcond",z_cond.shape) #zcond torch.Size([128, 512, 1, 1])
-    logits = vae_net.decoder(z_cond)
-    generated = torch.sigmoid(logits)
-    if save_folder:
-        save_path = os.path.join(save_folder, "generation.png")
-    else:
-        save_path = os.path.join(result_folder, "generation.png")
-    # vutils.save_image(generated, save_path)
-    # print("save image at", save_path)
-    save_image_grid(generated, save_path)
-    print("save image at", save_path)
-
-
-def image_generation_ones(save_folder=None):
-    batch = test_batch
-    latent_dim = vae_net.latent_dim
-    # sample both initial input and condition
-    # mu = torch.zeros(batch, latent_dim, 1, 1) + 1.0
-    # log_var = torch.zeros(batch, latent_dim, 1, 1) + 0.3
-    # trained_mu, trained_logvar
-    # print(mu.shape)
-    # zero_tensor = torch.zeros(batch, condition_dim, 1, 1).to(device)
-    ones_tensor = torch.ones(batch, condition_dim, 1, 1).to(device)
-
-    # z_mean = 1.0
-    # z_log_var = 0.3
-    #
-    # eps = torch.randn(batch, latent_dim, 1, 1)
-    # z = z_mean + math.exp(z_log_var * .5) * eps
-    # z = z.to(device)
-
-    z_list = []
-    for _ in range(batch):
-        z_mean = random.uniform(0.0, 1.0)
-        z_log_var = random.uniform(0.0, 1.0)
-        eps = torch.normal(mean=0.0, std=1.0, size=(latent_dim, 1, 1))
-        z = z_mean + math.exp(z_log_var * .5) * eps
-        z_list.append(z)
-
-    z = torch.stack(z_list, dim=0)  # [16, 512, 1, 1]
-    z = z.to(device)
-
-    # net mu [112, 128, 1, 1]
-    # mu = vae_net.mu[0:batch]
-    # log_var = vae_net.log_var[0:batch]
-    # z = vae_net.sample(mu.to(device), log_var.to(device))
-
-    z_cond = torch.cat((z, ones_tensor), dim=1)
-    # print("zcond",z_cond.shape) #zcond torch.Size([128, 512, 1, 1])
-    logits = vae_net.decoder(z_cond)
-    generated = torch.sigmoid(logits)
-
-    if save_folder:
-        save_path = os.path.join(save_folder, "generation_conditioned_with_ones.png")
-    else:
-        save_path = os.path.join(result_folder, "generation_conditioned_with_ones.png")
-
-    # vutils.save_image(generated, save_path)
-    # print("save image at", save_path)
-
-    save_image_grid(generated, save_path)
-    print("save image at", save_path)
-
-
-def image_generation_with_condition(test_labels, save_folder=None):
-    """Redundant function"""
-    batch = test_labels.shape[0]
-
-    latent_dim = vae_net.latent_dim
-    # generate z (method1)
-    # sample both initial input and condition
-    # mu = torch.zeros(batch, latent_dim, 1, 1) + 1.0
-    # log_var = torch.zeros(batch, latent_dim, 1, 1) + 0.3
-    #
-    # # z = [16, 3, 64, 64]
-    # z = vae_net.sample(mu.to(device), log_var.to(device))
-    # ------------------------------------------------------------#
-
-    # generate z (method2)
-    z_mean = 1.0
-    z_log_var = 0.3
-
-    # eps = torch.randn(batch, latent_dim, 1, 1)
-    # torch.normal(mean=0.5, std=torch.arange(1., 6.))
-    eps = torch.normal(mean=0.0, std=1.0, size=(batch, latent_dim, 1, 1))
-    z = z_mean + math.exp(z_log_var * .5) * eps
-    z = z.to(device)
-    # ------------------------------------------------------------#
-
-    # generate z (method3)
-    # z_list = []
-    # for _ in range(batch):
-    #     z_mean = random.uniform(0.0, 1.0)
-    #     z_log_var = random.uniform(0.0, 1.0)
-    #     eps = torch.normal(mean=0.0, std=1.0, size=(latent_dim, 1, 1))
-    #     z = z_mean + math.exp(z_log_var * .5) * eps
-    #     z_list.append(z)
-    #
-    # z = torch.stack(z_list, dim=0) #[16, 512, 1, 1]
-    # z = z.to(device)
-    # ------------------------------------------------------------#
-
-    # vae_net.train()
-    # with torch.no_grad():
-    #     recon_data, mu, log_var = vae_net(test_images.to(device), test_labels.to(device))
-    # z = vae_net.sample(mu.to(device), log_var.to(device))
-
-    image_embed = test_labels.to(device)
-    # image_embed = torch.reshape(image_embed, [-1, vae_net.condition_dim, 1, 1])
-    # ones = torch.ones(z.shape[0], vae_net.condition_dim, 1, 1).to(device)
-    # condition = ones * image_embed  # [16, 512, 1, 1]
-    condition = torch.reshape(image_embed, [-1, vae_net.condition_dim, 1, 1])
-
-    z_cond = torch.cat((z, condition), dim=1)
-
-    # print("zcond",z_cond.shape) #zcond torch.Size([128, 512, 1, 1])
-    logits = vae_net.decoder(z_cond)
-    generated = torch.sigmoid(logits)
-    if save_folder:
-        folder = save_folder
-    else:
-        folder = result_folder
-
-    save_path = os.path.join(folder, "generation_with_cond.png")
-    # vutils.save_image(generated, save_path)
-    # print("save image at", save_path)
-    save_image_grid(generated, save_path)
-    print("save image at", save_path)
-
-    save_path_ori = os.path.join(folder, "generation_with_cond_ori.png")
-    # vutils.save_image(test_images, save_path_ori)
-    # print("save image at", save_path_ori)
-    save_image_grid(test_images, save_path_ori)
-    print("save image at", save_path_ori)
-
-
 def image_generation_clip(target_attr=None, save_folder=None):
     """
     Generates and plots a batch of images with specific attributes (if given).
@@ -827,17 +659,12 @@ def reconstruct_images(save_folder=None, save_recon_and_ori_together=False):
         recon_images = torch.cat((torch.sigmoid(recon_data).cpu(), test_images.cpu()), 2)
 
         save_path = os.path.join(save_folder_, "recon.png")
-
-        # vutils.save_image(recon_images, save_path)
-        # print("save image at", save_path)
         save_image_grid(recon_images, save_path)
         print("save image at", save_path)
     else:
         recon_images = torch.sigmoid(recon_data).cpu()
 
         save_path = os.path.join(save_folder_, "recon.png")
-        # vutils.save_image(recon_images, save_path)
-        # print("save image at", save_path)
         save_image_grid(recon_images, save_path)
         print("save image at", save_path)
 
@@ -860,37 +687,29 @@ def attribute_manipulation(target_attr=None, image_embed_factor=0.5, save_folder
         label = test_labels[i][np.newaxis, ...]  # [1, 512]
         vae_net.eval()
         recon_data, img_z, var = vae_net(img.to(device), label.to(device))
-        # print("img_z", img_z.shape) # [1, 128, 1, 1]
-        # print("..recon_data", recon_data.shape) #[1, 3, 64, 64]
-        # recon_im = recon_data.cpu().detach().numpy()[0, :, :, :] # (3, 64, 64)
         recon_im = torch.sigmoid(recon_data)
         recon_im = recon_im.cpu().detach()[0, :, :, :]
-        # print("recon_data.numpy()[i, :, :, :]", recon_im.shape)
+
         reconstructed_images.append(recon_im)
 
         if target_attr is None:
-            # modified_label = np.expand_dims(test_labels[i], axis=0) # (1, 512)
+
             modified_label = label
             modified_label = modified_label.unsqueeze(2).unsqueeze(3)
-            # print("modi label", modified_label.shape)
+
         else:
             text = clip.tokenize([target_attr]).to(device)
             with torch.no_grad():
                 text_features = clip_model.encode_text(text)
             modified_label = (label.to(device) * image_embed_factor) + (
-                    text_features * new_attr_factor)  # (1, 512) #.cpu().detach().numpy() [1, 512]
+                    text_features * new_attr_factor)
 
-            modified_label = modified_label.unsqueeze(2).unsqueeze(3)  # .unsqueeze(modified_label, 3)
-            # print("modi label", modified_label.shape)
+            modified_label = modified_label.unsqueeze(2).unsqueeze(3)
 
         z_cond = torch.cat((img_z, modified_label), dim=1)
         logits = vae_net.decoder(z_cond)
         generated = torch.sigmoid(logits)
-        # modified_images.append(generated.detach().cpu().numpy()[0, :, :, :])
         modified_images.append(generated.detach().cpu()[0, :, :, :])
-        # break
-    # reconstructed_images = np.asarray(reconstructed_images, dtype='float32')
-    # modified_images = np.asarray(modified_images, dtype='float32')
 
     print("modified_images", modified_images[0].shape)
     str_target_attr = str(target_attr).replace(' ', '_')
@@ -901,7 +720,7 @@ def attribute_manipulation(target_attr=None, image_embed_factor=0.5, save_folder
         save_path = os.path.join(save_folder, file_name)
     else:
         save_path = os.path.join(result_folder, file_name)
-    # vutils.save_image(modified_images, save_path)
+
     save_image_grid(modified_images, save_path)
     print("save image at", save_path)
 
@@ -910,9 +729,6 @@ def attribute_manipulation(target_attr=None, image_embed_factor=0.5, save_folder
         save_path = os.path.join(save_folder, file_name)
     else:
         save_path = os.path.join(result_folder, file_name)
-    # reconstructed_images = np.asarray(reconstructed_images)
-    # print("reconstructed_images",reconstructed_images.shape)
-    # vutils.save_image(reconstructed_images, save_path)
     save_image_grid(reconstructed_images, save_path)
     print("save image at", save_path)
 
@@ -977,7 +793,6 @@ def train():
             vutils.save_image(images, save_path)
             image_generation_clip(target_attr="sad", save_folder=result_folder_epoch)
             image_generation_clip(target_attr="wearing glasses", save_folder=result_folder_epoch)
-            image_generation()
 
         # Save a checkpoint
         if (epoch + 1) % save_model_every == 0:
@@ -1005,54 +820,15 @@ if __name__ == "__main__":
     if run_train:
         train()
     result_folder = "./Results/temp"
-    # attribute_manipulation(target_attr="wear reading glasses", image_embed_factor=0.5, save_folder=result_folder)
-    test_images, test_labels = dataiter.next()
-    test_images, test_labels = dataiter.next()
-    test_images, test_labels = dataiter.next()
 
-    # plot_interpolation(target_attr="smiling", num_images=2, save_folder=None)
+    # 3) attribute manipulation
+    attribute_manipulation(target_attr="wear reading glasses", image_embed_factor=0.5, save_folder=result_folder)
+    plot_interpolation(target_attr="smiling", num_images=2, save_folder=None)
+
+    # 1) text-to-image
     image_generation_clip(target_attr="wear glasses", save_folder=result_folder)
-    # image_generation_clip(target_attr="male with bushy eyebrows", save_folder=result_folder)
-    # image_generation_clip(target_attr="male wearing glasses", save_folder=result_folder)
-    # image_generation_clip(target_attr="young male with goatee", save_folder=result_folder)
-    # image_generation_clip(target_attr="male with double chin and no beard", save_folder=result_folder)
-    # image_generation_clip(target_attr="woman with freckles", save_folder=result_folder)
-    # image_generation_clip(target_attr="asian woman with a mole on the upper lip", save_folder=result_folder)
-    # image_generation_clip(target_attr="woman wearing a red headscarf", save_folder=result_folder)
-    # image_generation_clip(target_attr="young woman with a tattoo on the cheek", save_folder=result_folder)
-    # image_generation_clip(target_attr="angry", save_folder=result_folder)
-    # image_generation_clip(target_attr="shocked", save_folder=result_folder)
-    # image_generation_clip(target_attr="happy", save_folder=result_folder)
-    # image_generation_clip(target_attr="sad", save_folder=result_folder)
-    # image_generation_clip(target_attr="toothless old man smiling", save_folder=result_folder)
-    # image_generation_clip(target_attr="hairless african man", save_folder=result_folder)
-    # image_generation_clip(target_attr="woman facing left", save_folder=result_folder)
-    # image_generation_clip(target_attr="man looking up", save_folder=result_folder)
-    # image_generation_clip(target_attr="a photo of a woman with rosy cheeks", save_folder=result_folder)
-    # image_generation_clip(target_attr="a painting of a woman with rosy cheeks", save_folder=result_folder)
-    # image_generation_clip(target_attr="Taylor Swift and Harry Styles lookalike", save_folder=result_folder)
-    # image_generation_clip(target_attr="Taylor Swift lookalike", save_folder=result_folder)
-    # image_generation_clip(target_attr="Harry Styles", save_folder=result_folder)
-    #
-    #
-    # image_generation_clip(target_attr="a woman with a baseball cap", save_folder=result_folder)
-    # image_generation_clip(target_attr="a woman with a bang", save_folder=result_folder)
-    # image_generation_clip(target_attr="crying", save_folder=result_folder)
-    # image_generation_clip(target_attr="very sad", save_folder=result_folder)
-    # image_generation_clip(target_attr="a photo of a sad person", save_folder=result_folder)
-    # image_generation_clip(target_attr="smiling", save_folder=result_folder)
-    # image_generation_clip(target_attr="smiling woman", save_folder=result_folder)
-    # image_generation_clip(target_attr="baby", save_folder=result_folder)
-    # image_generation_clip(target_attr="dog", save_folder=result_folder)
-    # image_generation_clip(target_attr="hand", save_folder=result_folder)
-    # image_generation_clip(target_attr="a man", save_folder=result_folder)
-    # image_generation_clip(target_attr="asian", save_folder=result_folder)
-    # image_generation_clip(target_attr="a red hair woman", save_folder=result_folder)
-    # image_generation_clip(target_attr="wearing glasses", save_folder=result_folder)
-    # image_generation_clip(target_attr=None, save_folder=result_folder)
-    # image_generation_clip(target_attr="a photo of a person wearing glasses", save_folder=result_folder)
-    #
-    # reconstruct_images(save_folder=result_folder)
-    # image_generation_with_condition(test_labels, save_folder=result_folder)
-    # image_generation(save_folder=result_folder)
-    # image_generation_ones(save_folder=result_folder)
+    # 2) image-to-image
+    image_generation_clip(target_attr=None, save_folder=result_folder)
+
+    # image reconstruction
+    reconstruct_images(save_folder=result_folder)
