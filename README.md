@@ -216,7 +216,7 @@ def get_data_celebA(transform, batch_size):
 4. image reconstruction
 
 - `reconstruct_images()`
-- takes some images and produce the reconstruction of them
+- takes some images and produce the reconstruction of them (upper row is the reconstructed images, bottom row is the original)
 
 ![](Results/result_CNN_VAE_celeba_2022-08-04_23.22.32/recon.png)
 
