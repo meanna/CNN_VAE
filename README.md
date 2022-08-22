@@ -208,10 +208,10 @@ def get_data_celebA(transform, batch_size):
 
 | example            |  example |
 :-------------------------:|:-------------------------:
-![](Results/results_mixed/modified_images_blue eyes_4.png)|![](Results/results_mixed/modified_images_red hair_4.png)
-![](Results/results_mixed/modified_images_big eyes_8.png)|![](Results/results_mixed/modified_images_big eyes_4.png)
-![](Results/results_mixed/modified_images_smiling_4.png)|![](Results/results_mixed/modified_images_smiling_8.png)
-![](Results/results_mixed/modified_images_angry_3.png)|![](Results/results_mixed/modified_images_angry_5.png)
+![](Results/results_mixed/modified_images_blue eyes_4.png) | ![](Results/results_mixed/modified_images_red hair_4.png)
+![](Results/results_mixed/modified_images_big eyes_8.png) | ![](Results/results_mixed/modified_images_big eyes_4.png)
+![](Results/results_mixed/modified_images_smiling_4.png) | ![](Results/results_mixed/modified_images_smiling_8.png)
+![](Results/results_mixed/modified_images_angry_3.png) | ![](Results/results_mixed/modified_images_angry_5.png)
 
 4. image reconstruction
 
