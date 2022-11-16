@@ -1,0 +1,51 @@
+learning_rate = 0.0001
+train_size = 1583
+batch_size = 128 
+label_dim = 512
+image_size = 64
+latent_dim = 512
+beta = 0.1
+model checkpoint = /home/debian/home/sseeha/clip_gan/conditional_VAE/src/Models/CNN_VAE_celeba_2022-08-04_18.05.43.pt
+
+
+time total = 588.2260026900003 sec (9.803766711500005 min )
+
+time total = 587.0732120419998 sec (9.78455353403333 min )
+
+time total = 581.6757314280003 sec (9.694595523800006 min )
+
+time total = 585.4093131200007 sec (9.756821885333345 min )
+
+time total = 581.873826553001 sec (9.697897109216683 min )
+
+time total = 586.4047781089994 sec (9.773412968483322 min )
+
+time total = 592.6928431449996 sec (9.878214052416661 min )
+
+time total = 587.4569380770008 sec (9.790948967950014 min )
+
+time total = 587.9587211700018 sec (9.79931201950003 min )
+
+time total = 588.4128554050003 sec (9.806880923416673 min )
+
+time total = 591.3048369640019 sec (9.855080616066697 min )
+
+time total = 593.8931202610001 sec (9.89821867101667 min )
+
+time total = 591.6658077700013 sec (9.861096796166688 min )
+
+time total = 588.3488211250005 sec (9.805813685416675 min )
+
+time total = 594.0411042449996 sec (9.900685070749994 min )
+
+time total = 582.4079754810009 sec (9.706799591350014 min )
+
+time total = 583.8685068949999 sec (9.73114178158333 min )
+
+time total = 590.7136654679998 sec (9.845227757799996 min )
+
+time total = 586.7683429779972 sec (9.77947238296662 min )
+
+time total = 586.0033609769998 sec (9.766722682949997 min )
+
+time total = 11785.529337994001 sec (196.4254889665667 min )
